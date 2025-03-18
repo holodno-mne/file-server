@@ -10,7 +10,6 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.UUID;
 
 public class FileService {
     private static final String STORAGE_DIR = "storage";
@@ -19,17 +18,17 @@ public class FileService {
     private final ResponseBuilder responseBuilder;
     private final Logger logger;
 
-    public FileService(ResponseBuilder responseBuilder){
+    public FileService(ResponseBuilder responseBuilder) {
         this.responseBuilder = responseBuilder;
         this.logger = LoggerFactory.getLogger(FileService.class);
         createStorageDirectory();
     }
 
-    private void createStorageDirectory(){
-        try{
+    private void createStorageDirectory() {
+        try {
             Files.createDirectories(Paths.get(STORAGE_DIR));
             logger.info("Created storage directory: " + STORAGE_DIR);
-        } catch (IOException e){
+        } catch (IOException e) {
             logger.error("Error creating storage directory: " + e.getMessage());
         }
     }
@@ -38,7 +37,6 @@ public class FileService {
         String fileName = originalName;
         int counter = 1;
 
-        // Проверяем, существует ли файл с таким именем
         while (Files.exists(directory.resolve(fileName))) {
             int dotIndex = originalName.lastIndexOf(".");
             String nameWithoutExtension = (dotIndex == -1) ? originalName : originalName.substring(0, dotIndex);
@@ -52,14 +50,14 @@ public class FileService {
 
     public void handleGetRequest(String path, OutputStream out) throws IOException {
         Path filePath = Paths.get(STORAGE_DIR, path.substring(1));
-        if(!Files.exists(filePath)){
+        if (!Files.exists(filePath)) {
             logger.error("File not found " + filePath);
             responseBuilder.sendResponse(out, "HTTP/1.1 404 Not Found", "File not found");
             return;
         }
 
         String mimeType = Files.probeContentType(filePath);
-        if(!isSupportedMimeType(mimeType)){
+        if (!isSupportedMimeType(mimeType)) {
             logger.error("Unsupported file type" + mimeType);
             responseBuilder.sendResponse(out, "HTTP/1.1 415 Unsupported media type", "Unsupported file type");
             return;
@@ -74,16 +72,14 @@ public class FileService {
         String headerLine;
         int contentLength = 0;
         String contentType = null;
-        String originalName = null; // Имя файла из запроса
+        String originalName = null;
 
-        // Чтение заголовков запроса
         while ((headerLine = in.readLine()) != null && !headerLine.isEmpty()) {
             if (headerLine.startsWith("Content-Length:")) {
                 contentLength = Integer.parseInt(headerLine.substring("Content-Length:".length()).trim());
             } else if (headerLine.startsWith("Content-Type:")) {
                 contentType = headerLine.substring("Content-Type:".length()).trim();
             } else if (headerLine.startsWith("Content-Disposition:")) {
-                // Извлечение имени файла из заголовка Content-Disposition
                 String[] parts = headerLine.split(";");
                 for (String part : parts) {
                     if (part.trim().startsWith("filename=")) {
@@ -94,43 +90,36 @@ public class FileService {
             }
         }
 
-        // Если имя файла не было передано, используем имя по умолчанию
         if (originalName == null) {
             originalName = "uploaded_file" + getFileExtension(contentType);
         }
 
-        // Проверка размера файла
         if (contentLength > MAX_FILE_SIZE) {
             logger.error("File size exceeds limit: " + contentLength);
             responseBuilder.sendResponse(out, "HTTP/1.1 413 Payload Too Large", "File size exceeds limit");
             return;
         }
 
-        // Проверка MIME-типа
         if (!isSupportedMimeType(contentType)) {
             logger.error("Unsupported file type: " + contentType);
             responseBuilder.sendResponse(out, "HTTP/1.1 415 Unsupported Media Type", "Unsupported file type");
             return;
         }
 
-        // Чтение тела запроса (содержимого файла)
         char[] buffer = new char[contentLength];
         in.read(buffer, 0, contentLength);
         byte[] fileContent = new String(buffer).getBytes();
 
-        // Генерация уникального имени файла
         String uniqueFileName = generateUniqueFileName(originalName, Paths.get(STORAGE_DIR));
         Path filePath = Paths.get(STORAGE_DIR, uniqueFileName);
 
-        // Сохранение файла
         Files.write(filePath, fileContent);
 
-        // Отправка успешного ответа
         responseBuilder.sendResponse(out, "HTTP/1.1 201 Created", "File uploaded successfully");
         logger.info("File uploaded: " + filePath);
     }
 
-    private boolean isSupportedMimeType(String mimeType){
+    private boolean isSupportedMimeType(String mimeType) {
         return mimeType != null && (mimeType.equals("application/pdf") ||
                 mimeType.equals("application/zip") ||
                 mimeType.equals("image/png") ||
@@ -138,8 +127,8 @@ public class FileService {
                 mimeType.equals("text/plain"));
     }
 
-    private String getFileExtension(String mimeType){
-        switch (mimeType){
+    private String getFileExtension(String mimeType) {
+        switch (mimeType) {
             case "application/pdf":
                 return ".pdf";
             case "application/zip":

@@ -14,20 +14,20 @@ public class FileServer {
     private final RequestHandler requestHandler;
     private final Logger logger;
 
-    public FileServer(int port, RequestHandler requestHandler){
+    public FileServer(int port, RequestHandler requestHandler) {
         this.port = port;
         this.requestHandler = requestHandler;
         this.logger = LoggerFactory.getLogger(FileServer.class);
     }
 
-    public void start(){
-        try(ServerSocket serverSocket = new ServerSocket(port)){
+    public void start() {
+        try (ServerSocket serverSocket = new ServerSocket(port)) {
             logger.info("Server started on port " + port);
-            while(true){
+            while (true) {
                 Socket clientSocket = serverSocket.accept();
                 new Thread(() -> requestHandler.handle(clientSocket)).start();
             }
-        } catch (IOException e){
+        } catch (IOException e) {
             logger.error("Error starting server: " + e.getMessage());
         }
     }

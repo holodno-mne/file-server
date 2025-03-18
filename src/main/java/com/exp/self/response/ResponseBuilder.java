@@ -2,7 +2,6 @@ package com.exp.self.response;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 
 public class ResponseBuilder {
     public void sendResponse(OutputStream out, String status, String message) throws IOException {
@@ -10,7 +9,7 @@ public class ResponseBuilder {
         out.write(response.getBytes());
     }
 
-    public void sendResponse(OutputStream out, String status, byte[] content, String contentType) throws IOException{
+    public void sendResponse(OutputStream out, String status, byte[] content, String contentType) throws IOException {
         String responseHeader = status + "\r\n" +
                 "Content-Type: " + contentType + "\r\n" +
                 "Content-Length: " + content.length + "\r\n\r\n";
